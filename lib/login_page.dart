@@ -1,117 +1,269 @@
 import 'package:flutter/material.dart';
+import 'package:pet_paradise_app/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:animate_do/animate_do.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   final Function toggleTheme;
-
   LoginPage({required this.toggleTheme});
 
   @override
-  Widget build(BuildContext context) {
-    bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+  _LoginPageState createState() => _LoginPageState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
-        centerTitle: true,
-        backgroundColor: Color(0xFF8B5E3C), // Main theme color
-        actions: [
-          IconButton(
-            icon: Icon(Icons.nightlight_round),
-            onPressed: () {
-              toggleTheme();
-            },
+class _LoginPageState extends State<LoginPage> {
+  final ApiService apiService = ApiService();
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  bool isLoading = false;
+  bool _obscureText = true;
+  String? _errorMessage;
+
+  void _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await apiService.login(
+        emailController.text,
+        passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', response['token']);
+
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().contains('Invalid credentials') 
+          ? 'Invalid email or password'
+          : 'Connection error. Please try again.';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_errorMessage!),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Container(
-            width: double.infinity, // Ensure the container takes full width
-            height: MediaQuery.of(context).size.height, // Ensure container takes full height
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: Theme.of(context).brightness == Brightness.light
-                    ? [Color(0xFFD2B48C), Color(0xFF8B5E3C)]
-                    : [Color(0xFF8B5E3C), Color(0xFF5B3B2A)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [Color(0xFF8B5E3C), Color(0xFFD2B48C)],
               ),
             ),
-            child: Center(
+          ),
+          
+          SafeArea(
+            child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(26.0),
-                child: Card(
-                  elevation: 12,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: isLandscape ? _buildLandscapeLayout(context) : _buildPortraitLayout(context),
-                  ),
+                padding: EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 40),
+                    
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: Icon(Icons.brightness_6, color: Colors.white),
+                        onPressed: () => widget.toggleTheme(),
+                      ),
+                    ),
+
+                    FadeInDown(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.pets,
+                            size: 60,
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            'Welcome Back!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Sign in to continue',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: 40),
+
+                    FadeInUp(
+                      child: Container(
+                        padding: EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 20,
+                              offset: Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: emailController,
+                                style: TextStyle(color: Colors.black87),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your email';
+                                  }
+                                  if (!value.contains('@')) {
+                                    return 'Please enter a valid email';
+                                  }
+                                  return null;
+                                },
+                                decoration: _inputDecoration(
+                                  'Email',
+                                  Icons.email_outlined,
+                                ),
+                              ),
+                              SizedBox(height: 20),
+
+                              TextFormField(
+                                controller: passwordController,
+                                obscureText: _obscureText,
+                                style: TextStyle(color: Colors.black87),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your password';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Password must be at least 6 characters';
+                                  }
+                                  return null;
+                                },
+                                decoration: _inputDecoration(
+                                  'Password',
+                                  Icons.lock_outline,
+                                ).copyWith(
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscureText 
+                                        ? Icons.visibility 
+                                        : Icons.visibility_off,
+                                      color: Color(0xFF8B5E3C),
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscureText = !_obscureText;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 30),
+
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: isLoading ? null : _login,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color(0xFF8B5E3C),
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                  ),
+                                  child: isLoading
+                                    ? SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            Colors.black,
+                                          ),
+                                        ),
+                                      )
+                                    : Text(
+                                        'LOGIN',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 30),
+
+                    FadeInUp(
+                      delay: Duration(milliseconds: 300),
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/register');
+                        },
+                        child: RichText(
+                          text: TextSpan(
+                            text: "Don't have an account? ",
+                            style: TextStyle(color: Colors.white70),
+                            children: [
+                              TextSpan(
+                                text: 'Register',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Portrait Layout
-  Widget _buildPortraitLayout(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildHeader(),
-        SizedBox(height: 20),
-        _buildEmailField(),
-        SizedBox(height: 16),
-        _buildPasswordField(),
-        SizedBox(height: 20),
-        _buildLoginButton(context),
-        SizedBox(height: 10),
-        _buildRegisterLink(context),  // The registration link
-      ],
-    );
-  }
-
-  // Landscape Layout
-  Widget _buildLandscapeLayout(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height, // Ensure full height in landscape
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildEmailField(),
-                SizedBox(height: 16),
-                _buildPasswordField(),
-                SizedBox(height: 20),
-                _buildLoginButton(context),
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.pets, size: 100, color: Color(0xFF8B5E3C)),
-                SizedBox(height: 20),
-                Text(
-                  'Welcome Back!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF8B5E3C),
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -119,71 +271,34 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  // Common Widgets
-  Widget _buildHeader() {
-    return Text(
-      'Welcome Back!',
-      style: TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-        color: Color(0xFF8B5E3C),
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: Colors.grey[700]),
+      prefixIcon: Icon(icon, color: Color(0xFF8B5E3C)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
       ),
-    );
-  }
-
-  Widget _buildEmailField() {
-    return TextField(
-      decoration: InputDecoration(
-        labelText: 'Email',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        prefixIcon: Icon(Icons.email),
-        filled: true,
-        fillColor: Colors.grey[200],
+      filled: true,
+      fillColor: Colors.grey[100],
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
       ),
-    );
-  }
-
-  Widget _buildPasswordField() {
-    return TextField(
-      obscureText: true,
-      decoration: InputDecoration(
-        labelText: 'Password',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        prefixIcon: Icon(Icons.lock),
-        filled: true,
-        fillColor: Colors.grey[200],
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: Color(0xFF8B5E3C)),
       ),
-    );
-  }
-
-  Widget _buildLoginButton(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        backgroundColor: Colors.brown,
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: Colors.red),
       ),
-      onPressed: () {
-        Navigator.pushReplacementNamed(context, '/home');
-      },
-      child: Text(
-        'Login',
-        style: TextStyle(fontSize: 18, color: Colors.white),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: Colors.red, width: 2),
       ),
-    );
-  }
-
-  Widget _buildRegisterLink(BuildContext context) {
-    return TextButton(
-      onPressed: () {
-        Navigator.pushNamed(context, '/register');  // Navigates to RegisterPage when clicked
-      },
-      child: Text(
-        'Don\'t have an account? Register',
-        style: TextStyle(fontSize: 16, color: Color(0xFF8B5E3C)),
-      ),
+      floatingLabelBehavior: FloatingLabelBehavior.always,
     );
   }
 }

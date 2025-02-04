@@ -1,12 +1,32 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'footer.dart';
+import 'package:http/http.dart' as http;
 import 'nav_bar.dart';
 import 'product_detail_page.dart';
 
-class AccessoriesPage extends StatelessWidget {
+class AccessoriesPage extends StatefulWidget {
   final Function toggleTheme;
 
   AccessoriesPage({required this.toggleTheme});
+
+  @override
+  _AccessoriesPageState createState() => _AccessoriesPageState();
+}
+
+class _AccessoriesPageState extends State<AccessoriesPage> {
+  final String apiUrl = 'https://petsup.online/api/products';
+
+  Future<List<dynamic>> fetchAccessories() async {
+    final response = await http.get(Uri.parse(apiUrl));
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = json.decode(response.body);
+      final List<dynamic> allProducts = jsonResponse['data'];
+
+      return allProducts.where((product) => product['category'] == 'accessories').toList();
+    } else {
+      throw Exception('Failed to load accessories');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,55 +35,51 @@ class AccessoriesPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Accessories',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
+        title: Text('Accessories'),
         centerTitle: true,
         actions: [
           IconButton(
             icon: Icon(Icons.nightlight_round),
             onPressed: () {
-              toggleTheme();
+              widget.toggleTheme();
             },
           ),
         ],
-        backgroundColor: Color(0xFF8B5E3C), // Primary theme color
+        backgroundColor: Color(0xFF8B5E3C),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Dog Accessories', context),
-                  SizedBox(height: 10),
-                  isLandscape
-                      ? _buildGridProductList(context, 'dog', screenWidth)
-                      : _buildHorizontalProductList(context, 'dog'), // Dog Accessories product list
-                  SizedBox(height: 20),
-                  _buildSectionTitle('Cat Accessories', context),
-                  SizedBox(height: 10),
-                  isLandscape
-                      ? _buildGridProductList(context, 'cat', screenWidth)
-                      : _buildHorizontalProductList(context, 'cat'), // Cat Accessories product list
-                ],
-              ),
+      body: FutureBuilder<List<dynamic>>(
+        future: fetchAccessories(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No accessories found.'));
+          }
+
+          final List<dynamic> accessories = snapshot.data!;
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _buildSectionTitle('Explore Accessories', context),
+                ),
+                isLandscape
+                    ? _buildGridProductList(context, accessories, screenWidth)
+                    : _buildHorizontalProductList(context, accessories),
+              ],
             ),
-            Divider(),
-            SizedBox(height: 10),
-            Footer(), // Footer Widget
-          ],
-        ),
+          );
+        },
       ),
-      bottomNavigationBar: Navbar(), // Navigation Bar Widget
+      bottomNavigationBar: Navbar(),
     );
   }
 
-  // Method to Build Section Titles with Enhanced Styles
   Widget _buildSectionTitle(String title, BuildContext context) {
     return Text(
       title,
@@ -71,26 +87,25 @@ class AccessoriesPage extends StatelessWidget {
         fontSize: 28,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.0,
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white  // White text for dark mode
-            : Colors.black,  // Black text for light mode
+        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
       ),
     );
   }
 
-  // Horizontal scrolling Accessories product list for portrait mode
-  Widget _buildHorizontalProductList(BuildContext context, String category) {
-    List<Map<String, dynamic>> products = _getProducts(category);
+  Widget _buildHorizontalProductList(BuildContext context, List<dynamic> products) {
     return Container(
-      height: 300,
+      height: 320,
       child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         scrollDirection: Axis.horizontal,
         itemCount: products.length,
         itemBuilder: (context, index) {
+          final product = products[index];
           return _buildEnhancedProductCard(
-            products[index]['image'],
-            products[index]['name'],
-            products[index]['price'],
+            product['image_url'],
+            product['name'],
+            int.parse(product['price']),
+            product['description'],
             context,
           );
         },
@@ -98,65 +113,46 @@ class AccessoriesPage extends StatelessWidget {
     );
   }
 
-  // Grid-based product list for landscape mode with dynamic width adjustment
-  Widget _buildGridProductList(BuildContext context, String category, double screenWidth) {
-    List<Map<String, dynamic>> products = _getProducts(category);
+  Widget _buildGridProductList(BuildContext context, List<dynamic> products, double screenWidth) {
+    double cardWidth = 195;
 
-    // Calculate card width to prevent overflow
-    double cardWidth = screenWidth / 3.5; // Divide by 3.5 to leave some space for padding/margins
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: products.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3, // Show 3 items per row in landscape mode
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: cardWidth / 300, // Adjust based on the card width
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        itemCount: products.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: cardWidth / 320,
+        ),
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return _buildEnhancedProductCard(
+            product['image_url'],
+            product['name'],
+            int.parse(product['price']),
+            product['description'],
+            context,
+          );
+        },
       ),
-      itemBuilder: (context, index) {
-        return _buildEnhancedProductCard(
-          products[index]['image'],
-          products[index]['name'],
-          products[index]['price'],
-          context,
-        );
-      },
     );
   }
 
-  // Product Data
-  List<Map<String, dynamic>> _getProducts(String category) {
-    if (category == 'dog') {
-      return [
-        {'image': 'images/dog_food1.jpg', 'name': 'Dog Collar', 'price': 2200},
-        {'image': 'images/dog_food2.jpg', 'name': 'Dog Leash', 'price': 3220},
-        {'image': 'images/dog_food3.jpg', 'name': 'Dog Bowl', 'price': 2200},
-        {'image': 'images/dog_food4.jpg', 'name': 'Dog Toy', 'price': 4300},
-      ];
-    } else {
-      return [
-        {'image': 'images/cat_medicine1.jpg', 'name': 'Cat Collar', 'price': 6020},
-        {'image': 'images/cat_leash.jpg', 'name': 'Cat Leash', 'price': 8300},
-        {'image': 'images/cat_bowl.jpg', 'name': 'Cat Bowl', 'price': 3540},
-        {'image': 'images/cat_toy.jpg', 'name': 'Cat Toy', 'price': 4500},
-      ];
-    }
-  }
-
-  // Enhanced Product Card Widget for all products
-  Widget _buildEnhancedProductCard(String imagePath, String title, int price, BuildContext context) {
+  Widget _buildEnhancedProductCard(String imageUrl, String title, int price, String description, BuildContext context) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ProductDetailPage(
-              imagePath: imagePath,
+              imagePath: imageUrl,
               productName: title,
               price: price,
-              description: 'High-quality accessory for your pet.',
+              description: description,
             ),
           ),
         );
@@ -165,9 +161,7 @@ class AccessoriesPage extends StatelessWidget {
         width: 195,
         margin: EdgeInsets.only(right: 18),
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Color(0xFF303030)  // Darker background for dark mode
-              : Color(0xFFF9F9F9),  // Light background for light mode
+          color: Theme.of(context).brightness == Brightness.dark ? Color(0xFF303030) : Color(0xFFF9F9F9),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -185,8 +179,8 @@ class AccessoriesPage extends StatelessWidget {
               borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               child: AspectRatio(
                 aspectRatio: 1,
-                child: Image.asset(
-                  imagePath,
+                child: Image.network(
+                  imageUrl,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 120),
                 ),
@@ -203,9 +197,7 @@ class AccessoriesPage extends StatelessWidget {
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white  // White text for dark mode
-                          : Colors.black,  // Black text for light mode
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
                     ),
                   ),
                   SizedBox(height: 8),

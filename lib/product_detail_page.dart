@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animate_do/animate_do.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final String imagePath;
@@ -18,164 +19,246 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  int quantity = 1; // Initial quantity
+  int quantity = 1;
 
   @override
   Widget build(BuildContext context) {
-    // Get the orientation
-    final Orientation orientation = MediaQuery.of(context).orientation;
+    final size = MediaQuery.of(context).size;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[50],
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(widget.productName),
-        centerTitle: true,
-        backgroundColor: Color(0xFF8B5E3C), // Main theme color
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Product Image with rounded corners and shadow
-              Center(
-                child: Container(
-                  height: orientation == Orientation.portrait ? 250 : 200, // Adjust height based on orientation
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.4),
-                        spreadRadius: 3,
-                        blurRadius: 7,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(
-                      widget.imagePath,
-                      fit: BoxFit.contain, // Ensures image fits within the container
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 150),
-                    ),
-                  ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Enhanced Image Section
+            Container(
+              height: size.height * 0.45,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Color(0xFF8B5E3C),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
                 ),
-              ),
-              SizedBox(height: 20),
-
-              // Product Title
-              Text(
-                widget.productName,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF8B5E3C), // Main theme color
-                ),
-              ),
-              SizedBox(height: 10),
-
-              // Price with larger font and emphasis
-              Text(
-                'Rs. ${widget.price}',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
-                ),
-              ),
-              SizedBox(height: 10),
-
-              // Divider to separate product details
-              Divider(color: Color(0xFF8B5E3C).withOpacity(0.5), thickness: 1),
-
-              // Product Description
-              Text(
-                'Description',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF8B5E3C), // Main theme color
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                widget.description,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade800,
-                  height: 1.5,
-                ),
-              ),
-
-              SizedBox(height: 30),
-
-              // Quantity Selector with plus/minus buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        if (quantity > 1) quantity--;
-                      });
-                    },
-                    icon: Icon(Icons.remove, size: 24),
-                    color: Color(0xFF8B5E3C),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      quantity.toString(),
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        quantity++;
-                      });
-                    },
-                    icon: Icon(Icons.add, size: 24),
-                    color: Color(0xFF8B5E3C),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
                   ),
                 ],
               ),
-
-              SizedBox(height: 30),
-
-              // Add to Cart Button with enhanced styling
-              Center(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Add to cart logic
-                  },
-                  icon: Icon(Icons.shopping_cart, size: 20, color: Colors.white),
-                  label: Text(
-                    'Add to Cart',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Reduced padding
-                    backgroundColor: Color(0xFF8B5E3C), // Main theme color
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10), // Slightly smaller radius for balance
+              child: Stack(
+                children: [
+                  Center(
+                    child: Hero(
+                      tag: widget.imagePath,
+                      child: Image.network(
+                        widget.imagePath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 60, color: Colors.white70),
+                            SizedBox(height: 10),
+                            Text('Image not available',
+                                style: TextStyle(color: Colors.white70)),
+                          ],
+                        ),
+                      ),
                     ),
-                    shadowColor: Colors.black26, // Subtle shadow for the button
-                    elevation: 5, // Enhanced shadow effect
                   ),
-                ),
+                ],
               ),
+            ),
 
-              SizedBox(height: 20), // Reduced space after button
-            ],
-          ),
+            // Content Section
+            Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Product Name
+                  FadeInLeft(
+                    child: Text(
+                      widget.productName,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 15),
+
+                  // Price Tag
+                  FadeInRight(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.green[300]!, Colors.green[500]!],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        'Rs. ${widget.price}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 25),
+
+                  // Description
+                  FadeInUp(
+                    delay: Duration(milliseconds: 200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white70 : Colors.black87,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          widget.description,
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.5,
+                            color: isDarkMode ? Colors.white60 : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 30),
+
+                  // Quantity Selector
+                  FadeInUp(
+                    delay: Duration(milliseconds: 400),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.grey[800] : Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildQuantityButton(Icons.remove, () {
+                            if (quantity > 1) setState(() => quantity--);
+                          }),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              quantity.toString(),
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                          ),
+                          _buildQuantityButton(Icons.add, () {
+                            setState(() => quantity++);
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 30),
+
+                  // Add to Cart Button
+                  FadeInUp(
+                    delay: Duration(milliseconds: 600),
+                    child: Container(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Added to cart!'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.green,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                        label: Text(
+                          'Add to Cart',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF8B5E3C),
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          elevation: 3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuantityButton(IconData icon, VoidCallback onPressed) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xFF8B5E3C).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        color: Color(0xFF8B5E3C),
+        splashRadius: 24,
       ),
     );
   }

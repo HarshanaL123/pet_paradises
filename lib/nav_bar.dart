@@ -18,6 +18,7 @@ class Navbar extends StatelessWidget {
           _buildNavItem(context, Icons.home, 'Home', '/home', activePage == 'home', orientation),
           _buildNavItem(context, Icons.shopping_cart, 'Cart', '/cart', activePage == 'cart', orientation),
           _buildNavItem(context, Icons.person, 'Profile', '/profile', activePage == 'profile', orientation),
+          _buildNavItem(context, Icons.add_call, 'ContactUs', '/contactus', activePage == 'contactus', orientation),
         ],
       ),
     );
