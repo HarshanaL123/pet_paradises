@@ -4,6 +4,9 @@ import 'login_page.dart';
 import 'home_page.dart';
 import 'themes.dart';
 import 'cart_page.dart';
+import 'profile_page.dart';
+import 'contactus_page.dart';
+
 
 void main() {
   runApp(MyApp());
@@ -34,6 +37,8 @@ class _MyAppState extends State<MyApp> {
         '/home': (context) => HomePage(toggleTheme: toggleTheme),
         '/register': (context) => RegisterPage(),  // Add the RegisterPage route here
         '/cart': (context) => CartPage(),
+        '/profile': (context) => ProfilePage(),
+        '/contactus': (context) => ContactUsPage(),
       },
     );
   }

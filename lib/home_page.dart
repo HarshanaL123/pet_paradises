@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animate_do/animate_do.dart';
 import 'nav_bar.dart';
 import 'dog_supplies_page.dart';
 import 'cat_supplies_page.dart';
@@ -7,7 +8,6 @@ import 'accessories_page.dart';
 
 class HomePage extends StatelessWidget {
   final Function toggleTheme;
-
   HomePage({required this.toggleTheme});
 
   @override
@@ -21,7 +21,8 @@ class HomePage extends StatelessWidget {
           'Pet Paradise',
           style: TextStyle(
             fontSize: isLandscape ? 20 : 24,
-            color: isDarkMode ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
@@ -29,42 +30,28 @@ class HomePage extends StatelessWidget {
           IconButton(
             icon: Icon(
               isDarkMode ? Icons.wb_sunny : Icons.nightlight_round,
+              color: Colors.white,
               size: isLandscape ? 24 : 28,
             ),
-            onPressed: () {
-              toggleTheme();
-            },
+            onPressed: () => toggleTheme(),
           ),
         ],
         backgroundColor: Color(0xFF8B5E3C),
-        toolbarHeight: isLandscape ? 50 : 56,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            isLandscape ? _buildHeroSectionLandscape(isDarkMode) : _buildHeroSectionPortrait(isDarkMode),
-            SizedBox(height: 20),
-
             Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: isLandscape ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Shop by Category',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      color: isDarkMode ? Colors.white : Colors.black,
-                    ),
-                    textAlign: isLandscape ? TextAlign.left : TextAlign.center,
-                  ),
-                  SizedBox(height: 10),
-                  _buildCategoryGrid(context, isLandscape, isDarkMode),
-                ],
-              ),
+              padding: EdgeInsets.all(16),
+              child: isLandscape 
+                ? _buildHeroSectionLandscape(isDarkMode) 
+                : _buildHeroSectionPortrait(isDarkMode),
             ),
+            _buildMainContent(context, isLandscape, isDarkMode),
+            _buildAboutSection(context, isDarkMode),
+            _buildHighlightsSection(context, isDarkMode),
+            SizedBox(height: 20),
           ],
         ),
       ),
@@ -74,49 +61,335 @@ class HomePage extends StatelessWidget {
 
   Widget _buildHeroSectionPortrait(bool isDarkMode) {
     return Container(
-      width: double.infinity,
-      height: 240,
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('images/loginPage_img.jpg'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Container(
-        alignment: Alignment.center,
-        color: Colors.black.withOpacity(0.5),
-        child: Text(
-          'Welcome to Pet Paradise!',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
+      height: 250,
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'images/loginPage_img.jpg',
+                width: double.infinity,
+                height: 250,
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-        ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7),
+                ],
+              ),
+            ),
+          ),
+          Center(
+            child: FadeInDown(
+              duration: Duration(milliseconds: 500),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.pets, size: 60, color: Colors.white),
+                  SizedBox(height: 20),
+                  Text(
+                    'Welcome to Pet Paradise!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHeroSectionLandscape(bool isDarkMode) {
     return Container(
-      width: double.infinity,
-      height: 180,
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('images/loginPage_img.jpg'),
-          fit: BoxFit.cover,
+      height: 200,
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+              child: Image.asset(
+                'images/loginPage_img.jpg',
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7),
+                ],
+              ),
+            ),
+          ),
+          Center(
+            child: FadeInDown(
+              duration: Duration(milliseconds: 500),
+              child: Text(
+                'Welcome to Pet Paradise!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent(BuildContext context, bool isLandscape, bool isDarkMode) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FadeInUp(
+            duration: Duration(milliseconds: 500),
+            child: Text(
+              'Shop by Category',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+          ),
+          SizedBox(height: 20),
+          _buildCategoryGrid(context, isLandscape, isDarkMode),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutSection(BuildContext context, bool isDarkMode) {
+    return FadeInUp(
+      duration: Duration(milliseconds: 600),
+      child: Container(
+        padding: EdgeInsets.all(20),
+        margin: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              'About Pet Paradise',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+            SizedBox(height: 15),
+            Text(
+              'We are your one-stop destination for all pet needs. With years of experience, we provide high-quality products and exceptional service to ensure your pets receive the best care possible.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                height: 1.5,
+              ),
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildInfoCard('1000+', 'Products', Icons.inventory_2, isDarkMode),
+                _buildInfoCard('500+', 'Happy Customers', Icons.people, isDarkMode),
+                _buildInfoCard('50+', 'Brands', Icons.verified, isDarkMode),
+              ],
+            ),
+          ],
         ),
       ),
-      child: Container(
-        alignment: Alignment.center,
-        color: Colors.black.withOpacity(0.5),
-        child: Text(
-          'Welcome to Pet Paradise!',
+    );
+  }
+
+  Widget _buildInfoCard(String title, String subtitle, IconData icon, bool isDarkMode) {
+    return Column(
+      children: [
+        Icon(icon, color: Color(0xFF8B5E3C), size: 30),
+        SizedBox(height: 8),
+        Text(
+          title,
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 28,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black,
           ),
+        ),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 14,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHighlightsSection(BuildContext context, bool isDarkMode) {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Why Choose Us',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+          SizedBox(height: 20),
+          _buildHighlightCard(
+            'Premium Quality',
+            'We offer only the best products for your beloved pets',
+            Icons.star,
+            isDarkMode,
+          ),
+          _buildHighlightCard(
+            'Fast Delivery',
+            'Quick and reliable delivery to your doorstep',
+            Icons.local_shipping,
+            isDarkMode,
+          ),
+          _buildHighlightCard(
+            'Expert Support',
+            '24/7 customer support for all your pet care needs',
+            Icons.support_agent,
+            isDarkMode,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHighlightCard(String title, String description, IconData icon, bool isDarkMode) {
+    return FadeInUp(
+      child: Container(
+        padding: EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Color(0xFF8B5E3C).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: Color(0xFF8B5E3C), size: 24),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -131,48 +404,73 @@ class HomePage extends StatelessWidget {
     ];
 
     return GridView.builder(
-      itemCount: categories.length,
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isLandscape ? 3 : 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: isLandscape ? 1 : 0.8,
+        crossAxisCount: isLandscape ? 4 : 2,
+        crossAxisSpacing: 15,
+        mainAxisSpacing: 15,
+        childAspectRatio: 1,
       ),
+      itemCount: categories.length,
       itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () {
-            _navigateToCategoryPage(context, categories[index]['title']!);
-          },
-          child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            elevation: 8,
-            shadowColor: Colors.black.withOpacity(0.4),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: Image.asset(
-                    categories[index]['icon']!,
-                    height: 90,
-                    width: 90,
-                    fit: BoxFit.cover,
+        return FadeInUp(
+          delay: Duration(milliseconds: index * 100),
+          child: GestureDetector(
+            onTap: () => _navigateToCategoryPage(context, categories[index]['title']!),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
                   ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  children: [
+                    Image.asset(
+                      categories[index]['icon']!,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Text(
+                        categories[index]['title']!,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 5,
+                            ),
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 12),
-                Text(
-                  categories[index]['title']!,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: isDarkMode ? Colors.white : Colors.black,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );

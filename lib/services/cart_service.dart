@@ -5,6 +5,7 @@ import '../models/cart_item.dart';
 
 class CartService {
   static const String baseUrl = 'https://petsup.online/api';
+  static const int DELIVERY_CHARGE = 1500; // Fixed delivery charge
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -24,17 +25,14 @@ class CartService {
         },
       );
 
-      print('Cart Response: ${response.body}');
-
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final jsonResponse = json.decode(response.body);
         final List<dynamic> cartItems = jsonResponse['cart_items'] ?? [];
         return cartItems.map((item) => CartItem.fromJson(item)).toList();
       } else {
         throw Exception('Failed to load cart: ${response.statusCode}');
       }
     } catch (e) {
-      print('Cart Error: $e');
       throw Exception('Failed to load cart: $e');
     }
   }
@@ -56,20 +54,22 @@ class CartService {
         }),
       );
 
-      print('Add to Cart Response: ${response.body}');
-
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
         throw Exception(error['message'] ?? 'Failed to add item to cart');
       }
     } catch (e) {
-      print('Add to Cart Error: $e');
       throw Exception('Failed to add item: $e');
     }
   }
 
   Future<void> updateCartItem(String productId, int quantity) async {
     try {
+      if (quantity < 1) {
+        await removeFromCart(productId);
+        return;
+      }
+
       final token = await _getToken();
       if (token == null) throw Exception('No auth token found');
 
@@ -85,14 +85,11 @@ class CartService {
         }),
       );
 
-      print('Update Cart Response: ${response.body}');
-
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
         throw Exception(error['message'] ?? 'Failed to update cart item');
       }
     } catch (e) {
-      print('Update Cart Error: $e');
       throw Exception('Failed to update item: $e');
     }
   }
@@ -113,24 +110,25 @@ class CartService {
         }),
       );
 
-      print('Remove from Cart Response: ${response.body}');
-
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
         throw Exception(error['message'] ?? 'Failed to remove item from cart');
       }
     } catch (e) {
-      print('Remove from Cart Error: $e');
       throw Exception('Failed to remove item: $e');
     }
   }
 
-  Future<int> getCartTotal() async {
+  Future<Map<String, int>> getCartTotals() async {
     try {
       final items = await getCartItems();
-      return items.fold<int>(0, (sum, item) => sum + (item.price * item.quantity));
+      final subtotal = items.fold<int>(0, (sum, item) => sum + (item.price * item.quantity));
+      return {
+        'subtotal': subtotal,
+        'delivery': DELIVERY_CHARGE,
+        'total': subtotal + DELIVERY_CHARGE,
+      };
     } catch (e) {
-      print('Get Cart Total Error: $e');
       throw Exception('Failed to calculate cart total: $e');
     }
   }
