@@ -3,6 +3,7 @@ import 'package:pet_paradise_app/register_page.dart';
 import 'login_page.dart';
 import 'home_page.dart';
 import 'themes.dart';
+import 'cart_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -32,6 +33,7 @@ class _MyAppState extends State<MyApp> {
         '/': (context) => LoginPage(toggleTheme: toggleTheme),
         '/home': (context) => HomePage(toggleTheme: toggleTheme),
         '/register': (context) => RegisterPage(),  // Add the RegisterPage route here
+        '/cart': (context) => CartPage(),
       },
     );
   }

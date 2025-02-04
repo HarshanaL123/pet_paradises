@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:pet_paradise_app/services/cart_service.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final String imagePath;
@@ -207,18 +208,28 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     child: Container(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Added to cart!'),
-                              behavior: SnackBarBehavior.floating,
-                              backgroundColor: Colors.green,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          );
-                        },
+                        onPressed: () async {
+  try {
+    final cartService = CartService();
+    await cartService.addToCart(widget.imagePath, quantity);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Added to cart successfully!'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to add to cart: $e'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+},
                         icon: Icon(Icons.shopping_cart_outlined, color: Colors.white),
                         label: Text(
                           'Add to Cart',
