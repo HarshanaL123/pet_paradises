@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:animate_do/animate_do.dart';
 import 'nav_bar.dart';
 import 'product_detail_page.dart';
 
 class CatSuppliesPage extends StatefulWidget {
   final Function toggleTheme;
-
   CatSuppliesPage({required this.toggleTheme});
 
   @override
@@ -31,62 +31,109 @@ class _CatSuppliesPageState extends State<CatSuppliesPage> {
   Widget build(BuildContext context) {
     bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     double screenWidth = MediaQuery.of(context).size.width;
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Cat Supplies',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.nightlight_round,
-              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+      body: CustomScrollView(
+        slivers: [
+          _buildAppBar(isDarkMode),
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                _buildHeroBanner(),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _buildSectionTitle('Explore Our Cat Products', context),
+                ),
+              ],
             ),
-            onPressed: () {
-              widget.toggleTheme();
-            },
           ),
+          _buildProductGrid(isLandscape, screenWidth),
         ],
-        backgroundColor: Color(0xFF8B5E3C),
-        toolbarHeight: 50,
       ),
-      body: FutureBuilder<List<dynamic>>(
-        future: fetchCatProducts(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No cat supplies found.'));
-          }
+      bottomNavigationBar: Navbar(),
+    );
+  }
 
-          final List<dynamic> catProducts = snapshot.data!;
+  Widget _buildAppBar(bool isDarkMode) {
+    return SliverAppBar(
+      expandedHeight: 60,
+      floating: true,
+      pinned: true,
+      backgroundColor: Color(0xFF8B5E3C),
+      title: Text(
+        'Cat Supplies',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.nightlight_round, color: Colors.white),
+          onPressed: () => widget.toggleTheme(),
+        ),
+      ],
+    );
+  }
 
-          return SingleChildScrollView(
+  Widget _buildHeroBanner() {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      margin: EdgeInsets.all(16),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.asset(
+              'images/cat_page.jpg',
+              fit: BoxFit.cover,
+              width: double.infinity,
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 20,
+            left: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildSectionTitle('Explore Our Products', context),
+                Text(
+                  'Premium Cat Supplies',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                isLandscape
-                    ? _buildGridProductList(context, catProducts, screenWidth)
-                    : _buildHorizontalProductList(context, catProducts),
+                SizedBox(height: 8),
+                Text(
+                  'Everything your feline friend needs',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                  ),
+                ),
               ],
             ),
-          );
-        },
+          ),
+        ],
       ),
-      bottomNavigationBar: Navbar(),
     );
   }
 
@@ -94,153 +141,148 @@ class _CatSuppliesPageState extends State<CatSuppliesPage> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: FontWeight.bold,
-        letterSpacing: 1.0,
-        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? Colors.white 
+            : Colors.black,
       ),
     );
   }
 
-  Widget _buildHorizontalProductList(BuildContext context, List<dynamic> products) {
-    return Container(
-      height: 280, // Adjusted height
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        scrollDirection: Axis.horizontal,
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return _buildEnhancedProductCard(
-            product['image_url'],
-            product['name'],
-            int.parse(product['price']),
-            product['description'],
-            context,
+  Widget _buildProductGrid(bool isLandscape, double screenWidth) {
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      sliver: FutureBuilder<List<dynamic>>(
+        future: fetchCatProducts(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            );
+          } else if (snapshot.hasError) {
+            return SliverFillRemaining(
+              child: Center(child: Text('Error: ${snapshot.error}')),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return SliverFillRemaining(
+              child: Center(child: Text('No cat supplies found')),
+            );
+          }
+
+          final products = snapshot.data!;
+          return SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: isLandscape ? 3 : 2,
+              childAspectRatio: 0.75,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final product = products[index];
+                return _buildProductCard(
+                  product['image_url'],
+                  product['name'],
+                  int.parse(product['price']),
+                  product['description'],
+                  context,
+                );
+              },
+              childCount: products.length,
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildGridProductList(BuildContext context, List<dynamic> products, double screenWidth) {
-    double cardWidth = 160; // Adjusted width
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        itemCount: products.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: cardWidth / 260, // Adjusted aspect ratio
-        ),
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return _buildEnhancedProductCard(
-            product['image_url'],
-            product['name'],
-            int.parse(product['price']),
-            product['description'],
+  Widget _buildProductCard(
+    String imageUrl, 
+    String title, 
+    int price, 
+    String description, 
+    BuildContext context
+  ) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return FadeInUp(
+      duration: Duration(milliseconds: 500),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
             context,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEnhancedProductCard(
-      String imageUrl, String title, int price, String description, BuildContext context) {
-    const double cardWidth = 160; // Adjusted width
-    const double cardHeight = 260; // Adjusted height
-    const double imageHeight = 140; // Adjusted image height
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailPage(
-              imagePath: imageUrl,
-              productName: title,
-              price: price,
-              description: description,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        width: cardWidth,
-        height: cardHeight,
-        margin: EdgeInsets.only(right: 16, bottom: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark ? Color(0xFF303030) : Color(0xFFF9F9F9),
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 5,
-              blurRadius: 7,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-              child: Container(
-                width: cardWidth,
-                height: imageHeight,
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 100),
-                ),
+            MaterialPageRoute(
+              builder: (context) => ProductDetailPage(
+                imagePath: imageUrl,
+                productName: title,
+                price: price,
+                description: description,
               ),
             ),
-            SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6.0),
-              child: Container(
-                height: cardHeight - imageHeight - 10,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
-                      ),
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDarkMode ? Color(0xFF303030) : Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+                  child: Container(
+                    width: double.infinity,
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => 
+                        Icon(Icons.broken_image, size: 60),
                     ),
-                    SizedBox(height: 6),
-                    Container(
-                      padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.brown,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Rs. $price',
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          color: isDarkMode ? Colors.white : Colors.black87,
                         ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        'Rs. $price',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF8B5E3C),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

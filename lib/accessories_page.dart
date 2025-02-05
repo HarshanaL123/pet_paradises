@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:animate_do/animate_do.dart';
 import 'nav_bar.dart';
 import 'product_detail_page.dart';
 
 class AccessoriesPage extends StatefulWidget {
   final Function toggleTheme;
-
   AccessoriesPage({required this.toggleTheme});
 
   @override
@@ -21,7 +21,6 @@ class _AccessoriesPageState extends State<AccessoriesPage> {
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonResponse = json.decode(response.body);
       final List<dynamic> allProducts = jsonResponse['data'];
-
       return allProducts.where((product) => product['category'] == 'accessories').toList();
     } else {
       throw Exception('Failed to load accessories');
@@ -32,51 +31,142 @@ class _AccessoriesPageState extends State<AccessoriesPage> {
   Widget build(BuildContext context) {
     bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     double screenWidth = MediaQuery.of(context).size.width;
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Accessories'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.nightlight_round),
-            onPressed: () {
-              widget.toggleTheme();
-            },
+      body: CustomScrollView(
+        slivers: [
+          _buildAppBar(isDarkMode),
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                _buildHeroBanner(),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _buildSectionTitle('Explore Our Accessories', context),
+                ),
+              ],
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 320,
+              child: FutureBuilder<List<dynamic>>(
+                future: fetchAccessories(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('No accessories found'));
+                  }
+
+                  final products = snapshot.data!;
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return _buildProductCard(
+                        product['image_url'],
+                        product['name'],
+                        int.parse(product['price']),
+                        product['description'],
+                        context,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ),
         ],
-        backgroundColor: Color(0xFF8B5E3C),
       ),
-      body: FutureBuilder<List<dynamic>>(
-        future: fetchAccessories(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No accessories found.'));
-          }
+      bottomNavigationBar: Navbar(),
+    );
+  }
 
-          final List<dynamic> accessories = snapshot.data!;
+  Widget _buildAppBar(bool isDarkMode) {
+    return SliverAppBar(
+      expandedHeight: 60,
+      floating: true,
+      pinned: true,
+      backgroundColor: Color(0xFF8B5E3C),
+      title: Text(
+        'Pet Accessories',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.nightlight_round, color: Colors.white),
+          onPressed: () => widget.toggleTheme(),
+        ),
+      ],
+    );
+  }
 
-          return SingleChildScrollView(
+  Widget _buildHeroBanner() {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      margin: EdgeInsets.all(16),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.asset(
+              'images/category_accessories.jpg',
+              fit: BoxFit.cover,
+              width: double.infinity,
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 20,
+            left: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildSectionTitle('Explore Accessories', context),
+                Text(
+                  'Premium Pet Accessories',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                isLandscape
-                    ? _buildGridProductList(context, accessories, screenWidth)
-                    : _buildHorizontalProductList(context, accessories),
+                SizedBox(height: 8),
+                Text(
+                  'Everything your pet needs to look stylish',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                  ),
+                ),
               ],
             ),
-          );
-        },
+          ),
+        ],
       ),
-      bottomNavigationBar: Navbar(),
     );
   }
 
@@ -84,142 +174,106 @@ class _AccessoriesPageState extends State<AccessoriesPage> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: FontWeight.bold,
-        letterSpacing: 1.0,
-        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+        color: Theme.of(context).brightness == Brightness.dark 
+          ? Colors.white 
+          : Colors.black,
       ),
     );
   }
 
-  Widget _buildHorizontalProductList(BuildContext context, List<dynamic> products) {
-    return Container(
-      height: 320,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        scrollDirection: Axis.horizontal,
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return _buildEnhancedProductCard(
-            product['image_url'],
-            product['name'],
-            int.parse(product['price']),
-            product['description'],
-            context,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildGridProductList(BuildContext context, List<dynamic> products, double screenWidth) {
-    double cardWidth = 195;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        itemCount: products.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: cardWidth / 320,
-        ),
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return _buildEnhancedProductCard(
-            product['image_url'],
-            product['name'],
-            int.parse(product['price']),
-            product['description'],
-            context,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEnhancedProductCard(String imageUrl, String title, int price, String description, BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailPage(
-              imagePath: imageUrl,
-              productName: title,
-              price: price,
-              description: description,
-            ),
-          ),
-        );
-      },
+  Widget _buildProductCard(
+    String imageUrl, 
+    String title, 
+    int price, 
+    String description, 
+    BuildContext context
+  ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    return FadeInUp(
+      duration: Duration(milliseconds: 500),
       child: Container(
-        width: 195,
-        margin: EdgeInsets.only(right: 18),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark ? Color(0xFF303030) : Color(0xFFF9F9F9),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 5,
-              blurRadius: 7,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 120),
+        width: 220,
+        margin: EdgeInsets.only(right: 16),
+        child: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProductDetailPage(
+                  imagePath: imageUrl,
+                  productName: title,
+                  price: price,
+                  description: description,
                 ),
               ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDarkMode ? Color(0xFF303030) : Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Column(
-                children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.brown,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'Rs. $price',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+                    child: Container(
+                      width: double.infinity,
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => 
+                          Icon(Icons.broken_image, size: 60),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          'Rs. $price',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF8B5E3C),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
