@@ -22,8 +22,11 @@ class ProfileService {
       },
     );
 
+    print('Profile Response: ${response.body}'); // Debug print
+
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      final jsonResponse = json.decode(response.body);
+      return jsonResponse['data'] ?? {}; // Get user data from response
     } else {
       throw Exception('Failed to load profile');
     }
@@ -46,7 +49,8 @@ class ProfileService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to update profile');
+      final error = json.decode(response.body);
+      throw Exception(error['message'] ?? 'Failed to update profile');
     }
   }
 
@@ -67,7 +71,8 @@ class ProfileService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to change password');
+      final error = json.decode(response.body);
+      throw Exception(error['message'] ?? 'Failed to change password');
     }
   }
 }

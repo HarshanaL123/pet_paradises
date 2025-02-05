@@ -26,6 +26,23 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _loadProfile();
+    _nameController.addListener(_onNameChanged);
+  }
+
+    @override
+  void dispose() {
+    _nameController.removeListener(_onNameChanged);
+    _nameController.dispose();
+    _emailController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _onNameChanged() {
+    setState(() {
+      _userData['name'] = _nameController.text;
+    });
   }
 
   Future<void> _loadProfile() async {
@@ -37,6 +54,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _nameController.text = userData['name'] ?? '';
         _emailController.text = userData['email'] ?? '';
         _isLoading = false;
+        _error = null;
       });
     } catch (e) {
       setState(() {
@@ -47,6 +65,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showEditProfileDialog() {
+    // Store original values in case of cancellation
+    final originalName = _nameController.text;
+    final originalEmail = _emailController.text;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -60,7 +82,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: 'Name',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 validator: (value) => value?.isEmpty ?? true ? 'Name is required' : null,
               ),
@@ -69,7 +93,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 validator: (value) {
                   if (value?.isEmpty ?? true) return 'Email is required';
@@ -82,7 +108,12 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              // Restore original values on cancel
+              _nameController.text = originalName;
+              _emailController.text = originalEmail;
+              Navigator.pop(context);
+            },
             child: Text('Cancel'),
           ),
           ElevatedButton(
@@ -94,17 +125,33 @@ class _ProfilePageState extends State<ProfilePage> {
                     _emailController.text,
                   );
                   Navigator.pop(context);
-                  _loadProfile();
+                  // Update UI immediately
+                  setState(() {
+                    _userData['name'] = _nameController.text;
+                    _userData['email'] = _emailController.text;
+                  });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Profile updated successfully')),
+                    SnackBar(
+                      content: Text('Profile updated successfully'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString())),
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF8B5E3C),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: Text('Save'),
           ),
         ],
@@ -127,7 +174,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Current Password',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 validator: (value) => 
                   value?.isEmpty ?? true ? 'Current password is required' : null,
@@ -138,7 +187,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'New Password',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 validator: (value) {
                   if (value?.isEmpty ?? true) return 'New password is required';
@@ -163,16 +214,30 @@ class _ProfilePageState extends State<ProfilePage> {
                     _newPasswordController.text,
                   );
                   Navigator.pop(context);
+                  _currentPasswordController.clear();
+                  _newPasswordController.clear();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Password changed successfully')),
+                    SnackBar(
+                      content: Text('Password changed successfully'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString())),
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF8B5E3C),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             child: Text('Change Password'),
           ),
         ],
@@ -180,14 +245,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
         body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF8B5E3C),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF8B5E3C)),
         ),
       );
     }
@@ -195,7 +258,64 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(),
+          SliverAppBar(
+            expandedHeight: 280,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                    colors: [Color(0xFF8B5E3C), Color(0xFFD2B48C)],
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 60),
+                    FadeInDown(
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.person, size: 60, color: Color(0xFF8B5E3C)),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    FadeInUp(
+                      delay: Duration(milliseconds: 300),
+                      child: Text(
+                        _userData['name'] ?? 'User',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    FadeInUp(
+                      delay: Duration(milliseconds: 400),
+                      child: Text(
+                        _userData['email'] ?? 'email@example.com',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           SliverToBoxAdapter(
             child: Column(
               children: [
@@ -212,67 +332,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 280,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFF8B5E3C), Color(0xFFD2B48C)],
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(height: 60),
-              FadeInDown(
-                child: Container(
-                  padding: EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                  ),
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 60, color: Color(0xFF8B5E3C)),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16),
-              FadeInUp(
-                delay: Duration(milliseconds: 300),
-                child: Text(
-                  _userData['name'] ?? 'User',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              SizedBox(height: 8),
-              FadeInUp(
-                delay: Duration(milliseconds: 400),
-                child: Text(
-                  _userData['email'] ?? 'email@example.com',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white70,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildProfileStats() {
     return Padding(
       padding: EdgeInsets.all(20),
@@ -280,11 +339,11 @@ class _ProfilePageState extends State<ProfilePage> {
         delay: Duration(milliseconds: 500),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildStatCard('Orders', '12', Icons.shopping_bag),
-            _buildStatCard('Reviews', '4', Icons.star),
-            _buildStatCard('Points', '254', Icons.card_giftcard),
-          ],
+          // children: [
+          //   _buildStatCard('Orders', '0', Icons.shopping_bag),
+          //   _buildStatCard('Reviews', '0', Icons.star),
+          //   _buildStatCard('Points', '0', Icons.card_giftcard),
+          // ],
         ),
       ),
     );
@@ -363,13 +422,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 'Change Password',
                 'Keep your account secure',
                 _showChangePasswordDialog,
-              ),
-              Divider(height: 1),
-              _buildSettingsTile(
-                Icons.shopping_bag,
-                'My Orders',
-                'Track your orders and history',
-                () {},
               ),
             ],
           ),

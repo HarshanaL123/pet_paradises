@@ -3,6 +3,7 @@ import 'package:animate_do/animate_do.dart';
 import 'nav_bar.dart';
 import 'services/cart_service.dart';
 import 'models/cart_item.dart';
+import 'checkout_page.dart'; // Add this line to import CheckoutPage
 
 class CartPage extends StatefulWidget {
   @override
@@ -348,24 +349,29 @@ Widget _buildCheckoutSection(BuildContext context) {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {
-              // Implement checkout logic
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF8B5E3C),
-              padding: EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-            ),
-            child: Text(
-              'Proceed to Checkout',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutPage(total: total),
+      ),
+    );
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Color(0xFF8B5E3C),
+    padding: EdgeInsets.symmetric(vertical: 16),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(15),
+    ),
+  ),
+  child: Text(
+    'Proceed to Checkout',
+    style: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+),
         ),
       ],
     ),
