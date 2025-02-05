@@ -5,7 +5,8 @@ import 'package:animate_do/animate_do.dart';
 
 class LoginPage extends StatefulWidget {
   final Function toggleTheme;
-  LoginPage({required this.toggleTheme});
+  final bool isAutoDarkMode;
+  LoginPage({required this.toggleTheme, required this.isAutoDarkMode});
 
   @override
   _LoginPageState createState() => _LoginPageState();

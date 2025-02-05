@@ -10,7 +10,8 @@ import 'accessories_page.dart';
 
 class HomePage extends StatefulWidget {
   final Function toggleTheme;
-  HomePage({required this.toggleTheme});
+  final bool isAutoDarkMode;
+ HomePage({required this.toggleTheme, required this.isAutoDarkMode});
 
   @override
   _HomePageState createState() => _HomePageState();
