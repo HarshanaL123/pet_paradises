@@ -1,19 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:battery_plus/battery_plus.dart';
 import 'nav_bar.dart';
+import 'services/battery_service.dart';
 import 'dog_supplies_page.dart';
 import 'cat_supplies_page.dart';
 import 'bird_supplies_page.dart';
 import 'accessories_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final Function toggleTheme;
   HomePage({required this.toggleTheme});
 
   @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final BatteryService _batteryService = BatteryService();
+  bool isLandscape = false;
+  bool isDarkMode = false;
+  int _batteryLevel = 0;
+  BatteryState _batteryState = BatteryState.unknown;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBatteryInfo();
+    _setupBatteryStateListener();
+  }
+
+  Future<void> _loadBatteryInfo() async {
+    final level = await _batteryService.getBatteryLevel();
+    setState(() => _batteryLevel = level);
+  }
+
+  void _setupBatteryStateListener() {
+    _batteryService.getBatteryState().listen((state) {
+      setState(() => _batteryState = state);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -33,7 +64,7 @@ class HomePage extends StatelessWidget {
               color: Colors.white,
               size: isLandscape ? 24 : 28,
             ),
-            onPressed: () => toggleTheme(),
+            onPressed: () => widget.toggleTheme(),
           ),
         ],
         backgroundColor: Color(0xFF8B5E3C),
@@ -56,6 +87,102 @@ class HomePage extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: Navbar(),
+    );
+  }
+
+  Widget _buildBatteryStatus() {
+    Color batteryColor = Colors.green;
+    IconData batteryIcon = Icons.battery_full;
+
+    if (_batteryLevel <= 20) {
+      batteryColor = Colors.red;
+      batteryIcon = Icons.battery_alert;
+    } else if (_batteryLevel <= 50) {
+      batteryColor = Colors.orange;
+      batteryIcon = Icons.battery_4_bar;
+    }
+
+    String batteryStatus = 'Unknown';
+    switch (_batteryState) {
+      case BatteryState.charging:
+        batteryStatus = 'Charging';
+        break;
+      case BatteryState.discharging:
+        batteryStatus = 'Discharging'; 
+        break;
+      case BatteryState.full:
+        batteryStatus = 'Full';
+        break;
+      default:
+        batteryStatus = 'Unknown';
+    }
+
+    return FadeInDown(
+      child: Container(
+        margin: EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  batteryIcon,
+                  color: batteryColor,
+                  size: 24,
+                ),
+                SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Battery Status',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    Text(
+                      batteryStatus,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: batteryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$_batteryLevel%',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: batteryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -483,25 +610,25 @@ class HomePage extends StatelessWidget {
       case 'Dog Supplies':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => DogSuppliesPage(toggleTheme: toggleTheme)),
+          MaterialPageRoute(builder: (context) => DogSuppliesPage(toggleTheme: widget.toggleTheme)),
         );
         break;
       case 'Cat Supplies':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => CatSuppliesPage(toggleTheme: toggleTheme)),
+          MaterialPageRoute(builder: (context) => CatSuppliesPage(toggleTheme: widget.toggleTheme)),
         );
         break;
       case 'Bird Supplies':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => BirdSuppliesPage(toggleTheme: toggleTheme)),
+          MaterialPageRoute(builder: (context) => BirdSuppliesPage(toggleTheme: widget.toggleTheme)),
         );
         break;
       case 'Accessories':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => AccessoriesPage(toggleTheme: toggleTheme)),
+          MaterialPageRoute(builder: (context) => AccessoriesPage(toggleTheme: widget.toggleTheme)),
         );
         break;
     }
